@@ -29,6 +29,7 @@ export const SAMPLE_VEHICLES = [
     features: ['Panoramic Roof', 'Smart Infotainment', 'Rear Camera', 'Adaptive Cruise'],
     description: 'A bold SUV with premium comfort and modern styling for everyday driving.',
   },
+
   {
     id: 2,
     name: 'Ford Handiri',
@@ -58,6 +59,7 @@ export const SAMPLE_VEHICLES = [
     features: ['Spacious Cabin', 'Driver Assist', 'Alloy Wheels', 'Bluetooth'],
     description: 'A contemporary SUV with strong road presence and comfort-focused features.',
   },
+  
   {
     id: 3,
     name: 'BMW Series 7',
