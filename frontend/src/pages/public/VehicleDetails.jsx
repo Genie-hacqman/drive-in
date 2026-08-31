@@ -27,6 +27,7 @@ const VehicleDetails = () => {
   const [testDriveDate, setTestDriveDate] = useState('');
   const [testDriveTime, setTestDriveTime] = useState('');
 
+
   useEffect(() => {
     const loadVehicle = async () => {
       try {
@@ -146,6 +147,7 @@ const VehicleDetails = () => {
             }} className="mb-4 rounded-xl overflow-hidden bg-surface-200 dark:bg-surface-800">
                 <img src={vehicle.image} alt={vehicle.name} className="w-full h-96 object-cover" />
               </motion.div>
+
 
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
