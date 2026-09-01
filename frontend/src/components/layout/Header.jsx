@@ -39,13 +39,13 @@ const Header = () => {
     setUserMenuOpen(false);
     addToast('You have been signed out', 'info');
   };
-  return <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-[var(--panel-bg)]/95 backdrop-blur-md dark:border-surface-700 shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
+  return <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b0c0d]/95 backdrop-blur-md shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-colors">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {}
-          <Link to="/" className="flex items-center gap-2 font-bold text-2xl text-slate-900 dark:text-white hover:text-accent-600 dark:hover:text-accent-400 transition-colors no-underline">
-            <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-700 rounded-lg flex items-center justify-center">
-              <span className="text-slate-950 font-bold">G</span>
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-300 transition-colors no-underline tracking-[-0.04em]">
+            <div className="w-8 h-8 border border-amber-400 rounded-full flex items-center justify-center">
+              <span className="text-amber-600 dark:text-amber-300 font-bold">G</span>
             </div>
             <span className="hidden sm:inline">Gene's InDrive</span>
           </Link>
@@ -61,12 +61,12 @@ const Header = () => {
           {}
           <div className="flex items-center gap-2 md:gap-4">
             {}
-            <button type="button" onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-800 transition-colors text-slate-700 dark:text-slate-200" aria-label="Toggle theme">
+            <button type="button" onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300" aria-label="Toggle theme">
               {isDark ? <FiSun size={20} /> : <FiMoon size={20} />}
             </button>
 
             {}
-            <Link to="/saved-vehicles" className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-800 transition-colors text-slate-700 dark:text-slate-200 no-underline" aria-label="Favorites">
+            <Link to="/saved-vehicles" className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300 no-underline" aria-label="Favorites">
               <FiHeart size={20} />
               {wishlist.length > 0 && <span className="absolute top-0 right-0 bg-accent-500 text-slate-950 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {wishlist.length}
@@ -74,7 +74,7 @@ const Header = () => {
             </Link>
 
             {}
-            <Link to="/cart" className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-800 transition-colors text-slate-700 dark:text-slate-200 no-underline" aria-label="Cart">
+            <Link to="/cart" className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300 no-underline" aria-label="Cart">
               <FiShoppingCart size={20} />
               {cartCount > 0 && <span className="absolute top-0 right-0 bg-accent-500 text-slate-950 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {cartCount}

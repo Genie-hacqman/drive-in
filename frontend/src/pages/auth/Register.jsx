@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { FiUser, FiMail, FiLock, FiPhone } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -87,7 +88,7 @@ const Register = () => {
         <title>Sign Up - Gene's InDrive</title>
       </Helmet>
 
-      <div className="relative min-h-screen bg-gradient-to-br from-surface-950 via-surface-900 to-surface-950 flex items-center justify-center px-4 py-12 overflow-hidden">
+      <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 flex items-center justify-center px-4 py-12 overflow-hidden">
         {}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-accent-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
@@ -95,15 +96,15 @@ const Register = () => {
         </div>
 
         <div className="relative w-full max-w-md">
-          <Card className="border-surface-700/50 bg-surface-900/80 backdrop-blur-xl">
+          <Card className="border-slate-200/80 bg-white/80 dark:border-surface-700/50 dark:bg-surface-900/80 backdrop-blur-xl shadow-[0_20px_55px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_55px_rgba(2,6,23,0.45)]">
             <CardHeader>
               <Link to="/" className="inline-flex items-center gap-2 mb-4 no-underline">
                 <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-700 rounded-lg flex items-center justify-center">
                   <span className="text-slate-950 font-bold">G</span>
                 </div>
               </Link>
-              <h1 className="text-2xl font-bold text-white">Create Account</h1>
-              <p className="text-slate-400 text-sm">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create Account</h1>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Join Gene's InDrive today
               </p>
             </CardHeader>
@@ -145,7 +146,7 @@ const Register = () => {
 
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" {...register('agreeTerms')} className="w-4 h-4 rounded border-slate-300 dark:border-surface-600 mt-1" />
-                  <span className="text-sm text-slate-400">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
                     I agree to the Terms of Service and Privacy Policy
                   </span>
                 </label>
@@ -157,12 +158,13 @@ const Register = () => {
                 </Button>
 
                 <Button type="button" variant="outline" fullWidth size="lg" onClick={handleGoogleSignUp}>
+                  <FcGoogle className="h-5 w-5 shrink-0" />
                   Continue with Google
                 </Button>
 
-                <p className="text-center text-slate-400 text-sm">
+                <p className="text-center text-slate-600 dark:text-slate-400 text-sm">
                   Already have an account?{' '}
-                  <Link to="/login" className="text-accent-400 hover:text-accent-300 no-underline">
+                  <Link to="/login" className="text-accent-700 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300 no-underline">
                     Sign in
                   </Link>
                 </p>

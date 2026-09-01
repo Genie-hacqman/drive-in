@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import {
   FiArrowRight,
   FiTrendingUp,
@@ -9,19 +9,13 @@ import {
 } from 'react-icons/fi';
 import Button from '../../components/ui/Button';
 import ShowcaseCard from '../../components/vehicle/ShowcaseCard';
-import { SAMPLE_VEHICLES, BRANDS } from '../../data/vehicles';
+import { SAMPLE_VEHICLES } from '../../data/vehicles';
 import toyotaLogo from 'car-brand-logos/toyota-logo.svg';
 import bmwLogo from 'car-brand-logos/bmw-logo.svg';
 import mercedesLogo from 'car-brand-logos/mercedes-benz-logo.svg';
 import audiLogo from 'car-brand-logos/audi-logo.svg';
 import fordLogo from 'car-brand-logos/ford-logo.png';
 import hondaLogo from 'car-brand-logos/honda-logo.png';
-import hyundaiLogo from 'car-brand-logos/hyundai-logo.svg';
-import kiaLogo from 'car-brand-logos/kia-logo.svg';
-import nissanLogo from 'car-brand-logos/nissan-logo.svg';
-import volkswagenLogo from 'car-brand-logos/volkswagen-logo.svg';
-import chevroletLogo from 'car-brand-logos/chevrolet-logo.png';
-import jeepLogo from 'car-brand-logos/jeep-logo.svg';
 import lexusLogo from 'car-brand-logos/lexus-logo.png';
 import porscheLogo from 'car-brand-logos/porsche-logo.svg';
 import ferrariLogo from 'car-brand-logos/ferrari-logo.svg';
@@ -108,42 +102,42 @@ const Home = () => {
         />
       </Helmet>
 
-      <section className="relative min-h-[760px] flex items-center overflow-hidden bg-slate-950">
+      <section className="relative min-h-[820px] flex items-center overflow-hidden bg-[#090a0b]">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1800&q=80"
             alt="Luxury vehicle inventory"
-            className="w-full h-full object-cover opacity-30 contrast-125"
+            className="w-full h-full object-cover opacity-55 contrast-125 saturate-[.8] scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.22),transparent_32%)]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#090a0b] via-[#090a0b]/75 to-[#090a0b]/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#090a0b] via-transparent to-[#090a0b]/30" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 w-full">
-          <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-10 items-end">
+          <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-14 items-end">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-white"
+              className="text-white max-w-3xl"
             >
-              <span className="inline-flex items-center px-3 py-1.5 mb-6 text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-amber-300 border border-amber-400/40 rounded-full bg-slate-900/70 backdrop-blur-sm shadow-[0_0_0_1px_rgba(251,191,36,0.1)]">
-                Premium automobile marketplace
+              <span className="inline-flex items-center gap-3 mb-7 text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-amber-300">
+                <span className="h-px w-10 bg-amber-400" /> The art of the drive
               </span>
 
-              <h1 className="text-5xl md:text-6xl xl:text-[5.25rem] font-black mb-6 leading-[0.9] tracking-[-0.06em]">
-                Buy, sell and ship <span className="text-amber-400">premium cars</span> worldwide.
+              <h1 className="text-5xl md:text-7xl xl:text-[6.4rem] font-bold mb-7 leading-[0.88] tracking-[-0.065em]">
+                The road is <span className="text-amber-400">yours.</span>
               </h1>
 
-              <p className="text-lg md:text-xl text-slate-200 mb-8 max-w-2xl leading-relaxed">
-                Discover clean, certified and luxury vehicles from trusted sources with streamlined buying, financing-ready listings, and global delivery support.
+              <p className="text-base md:text-lg text-slate-300 mb-9 max-w-xl leading-relaxed">
+                A considered collection of exceptional vehicles, selected for the way they make every mile feel different.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Button
                   size="lg"
                   to="/vehicles"
-                  className="flex items-center justify-center gap-2 px-7 shadow-[0_16px_30px_rgba(245,158,11,0.35)]"
+                  className="flex items-center justify-center gap-2 px-7 shadow-[0_16px_30px_rgba(199,151,69,0.28)] uppercase tracking-[0.08em] text-sm !text-slate-950"
                 >
                   Explore Inventory
                   <FiArrowRight />
@@ -151,18 +145,18 @@ const Home = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 px-7 bg-white/5 backdrop-blur-sm"
+                  className="border-white/30 !text-white hover:bg-white/10 px-7 bg-white/5 backdrop-blur-sm uppercase tracking-[0.08em] text-sm"
                   href="#showcase"
                 >
                   View Featured Cars
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-xl">
+              <div className="grid grid-cols-3 gap-5 max-w-xl border-t border-white/20 pt-5">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/6 backdrop-blur-md p-4 shadow-[0_20px_40px_rgba(15,23,42,0.18)]">
+                  <div key={stat.label}>
                     <p className="text-2xl md:text-3xl font-bold text-white">{stat.number}</p>
-                    <p className="text-slate-300 text-sm mt-1">{stat.label}</p>
+                    <p className="text-slate-400 text-[0.68rem] uppercase tracking-[0.12em] mt-1">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -172,26 +166,26 @@ const Home = () => {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="rounded-[28px] border border-white/10 bg-slate-900/80 p-5 backdrop-blur-xl shadow-[0_30px_80px_rgba(2,6,23,0.55)]"
+              className="rounded-sm border border-white/15 bg-black/35 p-6 md:p-7 backdrop-blur-xl shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
             >
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Quick search</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-amber-300">Start your journey</p>
                   <h2 className="text-2xl font-bold text-white mt-2">Find your next vehicle</h2>
                 </div>
-                <span className="rounded-full bg-amber-500/15 text-amber-300 px-2.5 py-1 text-xs font-semibold ring-1 ring-amber-400/20">Live</span>
+                <span className="text-[0.65rem] uppercase tracking-[0.18em] text-slate-400">01 / 04</span>
               </div>
 
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <select className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  <select className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
                     <option>Any Make</option>
                     <option>Toyota</option>
                     <option>BMW</option>
                     <option>Mercedes</option>
                     <option>Ford</option>
                   </select>
-                  <select className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  <select className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
                     <option>Any Model</option>
                     <option>RX 350</option>
                     <option>C-Class</option>
@@ -204,24 +198,24 @@ const Home = () => {
                   <input
                     type="number"
                     placeholder="Min price"
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400"
+                    className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400"
                   />
                   <input
                     type="number"
                     placeholder="Max price"
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400"
+                    className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <select className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  <select className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
                     <option>Fuel Type</option>
                     <option>Petrol</option>
                     <option>Diesel</option>
                     <option>Hybrid</option>
                     <option>Electric</option>
                   </select>
-                  <select className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
+                  <select className="rounded-xl border border-slate-600 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400">
                     <option>Transmission</option>
                     <option>Automatic</option>
                     <option>Manual</option>
@@ -231,7 +225,7 @@ const Home = () => {
                 <Button
                   size="lg"
                   to="/vehicles"
-                  className="w-full mt-2 flex items-center justify-center gap-2 shadow-[0_16px_30px_rgba(245,158,11,0.3)]"
+                  className="w-full mt-2 flex items-center justify-center gap-2 shadow-[0_16px_30px_rgba(245,158,11,0.3)] !text-slate-950"
                 >
                   Search Inventory
                   <FiArrowRight />
@@ -248,12 +242,12 @@ const Home = () => {
             {[...brandLogos, ...brandLogos].map((brand, index) => (
               <div
                 key={`${brand.name}-${index}`}
-                className="logo-marquee-item flex h-16 w-28 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm md:w-36"
+                className="logo-marquee-item flex h-16 w-28 items-center justify-center rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-amber-600/5 px-3 text-center shadow-[0_8px_16px_rgba(251,191,36,0.1)] backdrop-blur-md hover:shadow-[0_12px_24px_rgba(251,191,36,0.2)] hover:border-amber-400/50 transition-all duration-300 md:w-36"
               >
                 <img
                   src={brand.logo}
                   alt={brand.name}
-                  className="max-h-8 w-auto max-w-[90px] object-contain opacity-80 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0 md:max-h-9"
+                  className="max-h-8 w-auto max-w-[90px] object-contain opacity-100 transition-all duration-300 hover:opacity-110 md:max-h-9"
                 />
               </div>
             ))}
@@ -400,8 +394,8 @@ const Home = () => {
           </span>
           <h2 className="text-4xl md:text-5xl font-black tracking-[-0.05em] mb-6 text-white">Ready to Find Your Vehicle?</h2>
           <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-            Join thousands of satisfied customers who've found their perfect car on
-            Gene's InDrive.
+            Join thousands of satisfied customers who&apos;ve found their perfect car on
+            Gene&apos;s InDrive.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" to="/vehicles">Start Browsing</Button>

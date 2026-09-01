@@ -76,15 +76,42 @@ export const initializeGoogleIdentity = async () => {
   }
 };
 
+const getLocalGoogleFallbackProfile = () => ({
+  name: 'Google User',
+  email: `google.user+local.${Date.now()}@gmail.com`,
+  googleId: `local-google-user-${Date.now()}`,
+  picture: '',
+});
+
+const isLocalDeveloperFallbackEnabled = () => {
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocalhost && import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCAL_GOOGLE_FALLBACK === 'true';
+};
+
+const getGoogleOriginError = () => new Error(
+  'Google sign-in is not available for this origin. Add http://localhost:3001 to your Google OAuth authorized JavaScript origins and refresh the page.'
+);
+
 export const signInWithGoogle = async () => {
-  await initializeGoogleIdentity();
+  const localFallback = () => {
+    if (isLocalDeveloperFallbackEnabled()) {
+      return getLocalGoogleFallbackProfile();
+    }
 
-  return new Promise((resolve, reject) => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    throw getGoogleOriginError();
+  };
 
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response) => {
+  try {
+    await initializeGoogleIdentity();
+
+    return await new Promise((resolve, reject) => {
+      const google = window.google?.accounts?.id;
+      if (!google) {
+        reject(new Error('Google Identity Services is unavailable right now.'));
+        return;
+      }
+
+      const callback = (response) => {
         try {
           if (!response?.credential) {
             reject(new Error('Google sign-in was cancelled.'));
@@ -101,16 +128,31 @@ export const signInWithGoogle = async () => {
         } catch (error) {
           reject(error);
         }
-      },
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      use_fedcm_for_prompt: true,
-    });
+      };
 
-    window.google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        reject(new Error('Google sign-in is not available right now. Please try again.'));
-      }
+      google.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
+      });
+
+      google.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          try {
+            resolve(localFallback());
+          } catch (error) {
+            reject(getGoogleOriginError());
+          }
+        }
+      });
     });
-  });
+  } catch (error) {
+    if (isLocalDeveloperFallbackEnabled()) {
+      return getLocalGoogleFallbackProfile();
+    }
+
+    throw error;
+  }
 };
