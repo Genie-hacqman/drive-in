@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { FiFilter, FiX } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/ui/Button';

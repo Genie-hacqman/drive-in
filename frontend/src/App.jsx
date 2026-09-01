@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import Routes from './routes/index';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
@@ -36,20 +37,22 @@ export default function App() {
   }, [hydrateAuth]);
 
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <Router>
-            <div className="flex flex-col min-h-screen bg-[var(--page-bg)] text-[var(--text-color)] transition-colors duration-300">
-              <Header />
-              <main className="flex-1 bg-[var(--page-bg)] text-[var(--text-color)]">
-                <Routes />
-              </main>
-              <Footer />
-            </div>
-          </Router>
-        </ToastProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <Router>
+              <div className="flex flex-col min-h-screen bg-[var(--page-bg)] text-[var(--text-color)] transition-colors duration-300">
+                <Header />
+                <main className="flex-1 bg-[var(--page-bg)] text-[var(--text-color)]">
+                  <Routes />
+                </main>
+                <Footer />
+              </div>
+            </Router>
+          </ToastProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }

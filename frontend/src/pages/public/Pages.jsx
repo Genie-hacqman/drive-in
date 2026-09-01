@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { FiMail, FiPhone, FiMapPin, FiHeart, FiShoppingCart, FiTrash2 } from 'react-icons/fi';
 import Button from '../../components/ui/Button';
