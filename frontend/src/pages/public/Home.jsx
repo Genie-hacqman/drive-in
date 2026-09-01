@@ -387,6 +387,7 @@ const Home = () => {
         </div>
       </section>
 
+
       <section className="py-20 px-4 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
