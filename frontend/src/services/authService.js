@@ -5,12 +5,18 @@ export const authService = {
   login: (email, password) =>
     apiClient.post('/auth/login', { email, password }),
 
+  adminLogin: (email, password) =>
+    apiClient.post('/auth/admin/login', { email, password }),
+
   
   register: (userData) =>
     apiClient.post('/auth/register', userData),
 
   googleLogin: (googleProfile) =>
     apiClient.post('/auth/google', googleProfile),
+
+  adminGoogleLogin: (googleProfile) =>
+    apiClient.post('/auth/admin/google', googleProfile),
 
   
   verifyEmail: (token) =>
