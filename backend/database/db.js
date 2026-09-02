@@ -593,6 +593,54 @@ export async function getVehicleById(id) {
   return liftVehicle(result.rows[0]);
 }
 
+export async function createVehicle(vehicle) {
+  if (!vehicle?.name || !vehicle?.brand || !vehicle?.model) {
+    throw new Error('Vehicle name, brand, and model are required');
+  }
+
+  const result = await pool.query(
+    `INSERT INTO vehicles (id, name, brand, model, year, price, rental_price, image, category, type, fuel, transmission, mileage, seats, horsepower, color, rating, reviews, featured, available, status, specs, features, description)
+     VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM vehicles), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+     RETURNING *`,
+    [
+      String(vehicle.name), String(vehicle.brand), String(vehicle.model), Number(vehicle.year) || null,
+      Number(vehicle.price) || 0, Number(vehicle.rentalPrice) || 0, String(vehicle.image || ''),
+      String(vehicle.category || 'standard'), String(vehicle.type || 'sedan'), String(vehicle.fuel || 'gasoline'),
+      String(vehicle.transmission || 'automatic'), Number(vehicle.mileage) || 0, Number(vehicle.seats) || 5,
+      Number(vehicle.horsepower) || 0, String(vehicle.color || ''), Number(vehicle.rating) || 0,
+      Number(vehicle.reviews) || 0, Boolean(vehicle.featured), vehicle.available !== false,
+      String(vehicle.status || 'available'), vehicle.specs || {}, vehicle.features || [], String(vehicle.description || ''),
+    ],
+  );
+
+  return liftVehicle(result.rows[0]);
+}
+
+export async function updateVehicle(id, vehicle) {
+  const result = await pool.query(
+    `UPDATE vehicles
+     SET name = $1, brand = $2, model = $3, year = $4, price = $5, rental_price = $6, image = $7, category = $8, type = $9, fuel = $10, transmission = $11, mileage = $12, seats = $13, horsepower = $14, color = $15, rating = $16, reviews = $17, featured = $18, available = $19, status = $20, specs = $21, features = $22, description = $23, updated_at = NOW()
+     WHERE id = $24
+     RETURNING *`,
+    [
+      String(vehicle.name), String(vehicle.brand), String(vehicle.model), Number(vehicle.year) || null,
+      Number(vehicle.price) || 0, Number(vehicle.rentalPrice) || 0, String(vehicle.image || ''),
+      String(vehicle.category || 'standard'), String(vehicle.type || 'sedan'), String(vehicle.fuel || 'gasoline'),
+      String(vehicle.transmission || 'automatic'), Number(vehicle.mileage) || 0, Number(vehicle.seats) || 5,
+      Number(vehicle.horsepower) || 0, String(vehicle.color || ''), Number(vehicle.rating) || 0,
+      Number(vehicle.reviews) || 0, Boolean(vehicle.featured), vehicle.available !== false,
+      String(vehicle.status || 'available'), vehicle.specs || {}, vehicle.features || [], String(vehicle.description || ''), Number(id),
+    ],
+  );
+
+  return liftVehicle(result.rows[0]);
+}
+
+export async function deleteVehicle(id) {
+  const result = await pool.query('DELETE FROM vehicles WHERE id = $1 RETURNING id', [Number(id)]);
+  return result.rowCount > 0;
+}
+
 export async function getFeaturedVehicles(limit = 10) {
   const result = await pool.query('SELECT * FROM vehicles WHERE featured = TRUE ORDER BY id ASC LIMIT $1', [Number(limit)]);
   return result.rows.map((row) => liftVehicle(row));

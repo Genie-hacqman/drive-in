@@ -5,8 +5,10 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Server } from 'socket.io';
+import axios from 'axios';
 import {
   createBooking,
+  createVehicle,
   createUser,
   ensureDemoUser,
   getBookingById,
@@ -20,6 +22,8 @@ import {
   listVehicles,
   seedVehicles,
   updateBookingStatus,
+  updateVehicle,
+  deleteVehicle,
 } from '../database/db.js';
 
 dotenv.config();
@@ -59,6 +63,13 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+const adminMiddleware = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  return next();
+};
+
 app.get('/api/health', (_, res) => {
   res.json({ ok: true, service: 'drive-me-api' });
 });
@@ -93,15 +104,46 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
+app.post('/api/auth/admin/login', async (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
+  const user = await getUserByEmail(email);
+  if (!user || user.role !== 'admin') {
+    return res.status(401).json({ message: 'Invalid admin credentials' });
+  }
+
+  const valid = await bcrypt.compare(String(password), user.passwordHash);
+  if (!valid) {
+    return res.status(401).json({ message: 'Invalid admin credentials' });
+  }
+
+  const token = createToken(user);
+  return res.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+    },
+    token,
+  });
+});
+
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, phone, role = 'customer' } = req.body || {};
+  const registrationRole = role === 'dealer' ? 'dealer' : 'customer';
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Name, email, and password are required' });
   }
 
   try {
-    const newUser = await createUser({ name, email, password, phone, role });
+    const newUser = await createUser({ name, email, password, phone, role: registrationRole });
     const token = createToken(newUser);
 
     return res.status(201).json({
@@ -124,13 +166,44 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/google', async (req, res) => {
-  const { name, email, googleId, picture } = req.body || {};
+  const { credential } = req.body || {};
 
-  if (!email || !googleId) {
-    return res.status(400).json({ message: 'Google account details are required' });
+  if (!credential) {
+    return res.status(400).json({ message: 'Google credential is required' });
   }
 
   try {
+    // Verify the credential with Google
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      return res.status(500).json({ message: 'Google OAuth is not configured on the server' });
+    }
+
+    // Decode without verification first to get the JWT structure
+    const parts = credential.split('.');
+    if (parts.length !== 3) {
+      return res.status(400).json({ message: 'Invalid Google credential format' });
+    }
+
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+
+    // Verify the token signature with Google
+    const response = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data.aud !== googleClientId) {
+      return res.status(400).json({ message: 'Google credential audience mismatch' });
+    }
+
+    // At this point, the credential is verified by Google
+    const { email, sub: googleId, name, picture } = response.data;
+
+    if (!email || !googleId) {
+      return res.status(400).json({ message: 'Invalid Google credential payload' });
+    }
+
     const existingByEmail = await getUserByEmail(email);
     const existingByGoogle = await getUserByGoogleId(googleId);
     const user = existingByGoogle || existingByEmail || await createUser({
@@ -157,6 +230,65 @@ app.post('/api/auth/google', async (req, res) => {
       token,
     });
   } catch (error) {
+    console.error('Google auth error:', error.message);
+
+    if (error.response?.status === 400) {
+      return res.status(401).json({ message: 'Invalid or expired Google credential' });
+    }
+
+    return res.status(400).json({ message: error.message || 'Unable to sign in with Google' });
+  }
+});
+
+app.post('/api/auth/admin/google', async (req, res) => {
+  const { credential } = req.body || {};
+
+  if (!credential) {
+    return res.status(400).json({ message: 'Google credential is required' });
+  }
+
+  try {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (!googleClientId) {
+      return res.status(500).json({ message: 'Google OAuth is not configured on the server' });
+    }
+
+    const response = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data.aud !== googleClientId) {
+      return res.status(400).json({ message: 'Google credential audience mismatch' });
+    }
+
+    const { email, sub: googleId, picture } = response.data;
+    const user = (await getUserByGoogleId(googleId)) || (await getUserByEmail(email));
+
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'This Google account is not authorized for admin access' });
+    }
+
+    const token = createToken(user);
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        authProvider: user.authProvider,
+        picture: picture || null,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Admin Google auth error:', error.message);
+
+    if (error.response?.status === 400) {
+      return res.status(401).json({ message: 'Invalid or expired Google credential' });
+    }
+
     return res.status(400).json({ message: error.message || 'Unable to sign in with Google' });
   }
 });
@@ -180,6 +312,34 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
 
 app.post('/api/auth/logout', authMiddleware, (req, res) => {
   res.json({ ok: true, message: 'Logged out successfully' });
+});
+
+app.post('/api/admin/vehicles', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    return res.status(201).json({ vehicle: await createVehicle(req.body) });
+  } catch (error) {
+    return res.status(400).json({ message: error.message || 'Unable to create vehicle' });
+  }
+});
+
+app.put('/api/admin/vehicles/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const vehicle = await updateVehicle(req.params.id, req.body);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    return res.json({ vehicle });
+  } catch (error) {
+    return res.status(400).json({ message: error.message || 'Unable to update vehicle' });
+  }
+});
+
+app.delete('/api/admin/vehicles/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const deleted = await deleteVehicle(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Vehicle not found' });
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(409).json({ message: 'Vehicle cannot be deleted while it has bookings' });
+  }
 });
 
 app.get('/api/vehicles', async (req, res) => {

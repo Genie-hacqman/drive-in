@@ -11,6 +11,7 @@ const Cart = lazy(() => import('../pages/public/Cart'));
 
 
 const Login = lazy(() => import('../pages/auth/Login'));
+const AdminLogin = lazy(() => import('../pages/auth/AdminLogin'));
 const Register = lazy(() => import('../pages/auth/Register'));
 
 
@@ -67,6 +68,7 @@ const Routes = () => {
 
         {}
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 

@@ -63,17 +63,6 @@ export const initializeGoogleIdentity = async () => {
   if (!window.google?.accounts?.id) {
     throw new Error('Google Identity Services is unavailable right now.');
   }
-
-  if (!window.__driveMeGoogleInitialized) {
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: () => {},
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      use_fedcm_for_prompt: true,
-    });
-    window.__driveMeGoogleInitialized = true;
-  }
 };
 
 const getLocalGoogleFallbackProfile = () => ({
@@ -89,7 +78,7 @@ const isLocalDeveloperFallbackEnabled = () => {
 };
 
 const getGoogleOriginError = () => new Error(
-  'Google sign-in is not available for this origin. Add http://localhost:3001 to your Google OAuth authorized JavaScript origins and refresh the page.'
+  'Google sign-in is not available for this origin. Add http://localhost:3000 to your Google OAuth authorized JavaScript origins and refresh the page.'
 );
 
 export const signInWithGoogle = async () => {
@@ -118,25 +107,25 @@ export const signInWithGoogle = async () => {
             return;
           }
 
-          const payload = decodeGoogleJwt(response.credential);
+          // Send the raw credential to backend for verification
           resolve({
-            name: payload.name || payload.given_name || 'Google User',
-            email: payload.email,
-            googleId: payload.sub,
-            picture: payload.picture || '',
+            credential: response.credential,
           });
         } catch (error) {
           reject(error);
         }
       };
 
-      google.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: true,
-      });
+      if (!window.__driveMeGoogleInitialized) {
+        google.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          use_fedcm_for_prompt: true,
+        });
+        window.__driveMeGoogleInitialized = true;
+      }
 
       google.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {

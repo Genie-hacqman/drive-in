@@ -4,6 +4,12 @@ export const vehicleService = {
   
   getVehicles: (params) => apiClient.get('/vehicles', { params }),
 
+  createVehicle: (vehicle) => apiClient.post('/admin/vehicles', vehicle),
+
+  updateVehicle: (id, vehicle) => apiClient.put(`/admin/vehicles/${id}`, vehicle),
+
+  deleteVehicle: (id) => apiClient.delete(`/admin/vehicles/${id}`),
+
   
   getVehicleById: (id) => apiClient.get(`/vehicles/${id}`),
 

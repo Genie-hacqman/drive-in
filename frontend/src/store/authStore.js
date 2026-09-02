@@ -50,6 +50,19 @@ export const useAuthStore = create(
         }
       },
 
+      adminLogin: async (email, password) => {
+        set({ isLoading: true });
+        try {
+          const { data } = await authService.adminLogin(email, password);
+          set({ user: data.user, token: data.token, isAuthenticated: true });
+          return { user: data.user, token: data.token };
+        } catch (error) {
+          throw new Error(getErrorMessage(error));
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
       logout: () => {
         set({
           user: null,
@@ -84,6 +97,19 @@ export const useAuthStore = create(
             token: data.token,
             isAuthenticated: true,
           });
+          return { user: data.user, token: data.token };
+        } catch (error) {
+          throw new Error(getErrorMessage(error));
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      adminGoogleLogin: async (googleProfile) => {
+        set({ isLoading: true });
+        try {
+          const { data } = await authService.adminGoogleLogin(googleProfile);
+          set({ user: data.user, token: data.token, isAuthenticated: true });
           return { user: data.user, token: data.token };
         } catch (error) {
           throw new Error(getErrorMessage(error));
