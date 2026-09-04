@@ -65,7 +65,7 @@ export const useFetch = (fetchFn, dependencies = []) => {
 
   useEffect(() => {
     execute();
-  }, dependencies);
+  }, [execute, dependencies]);
 
   return { data, loading, error, refetch: execute };
 };
