@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { FiMail, FiPhone, FiMapPin, FiHeart, FiShoppingCart, FiTrash2 } from 'react-icons/fi';
@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { useVehicleStore } from '../../store/vehicleStore';
 import { useCartStore } from '../../store/cartStore';
 import { useToast } from '../../context/ToastContext';
+import { authService } from '../../services/authService';
 import toyotaLogo from 'car-brand-logos/toyota-logo.svg';
 import bmwLogo from 'car-brand-logos/bmw-logo.svg';
 import mercedesLogo from 'car-brand-logos/mercedes-benz-logo.svg';
@@ -762,10 +763,15 @@ export const ForgotPassword = () => {
       return;
     }
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setSubmitting(false);
-    setSent(true);
-    addToast('Password reset link sent — check your inbox', 'success');
+    try {
+      await authService.forgotPassword(email);
+      setSent(true);
+      addToast('If an account exists, a reset link will be sent shortly.', 'success');
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Unable to process your request.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -810,6 +816,67 @@ export const ForgotPassword = () => {
                       Sign in
                     </a>
                   </p>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export const ResetPassword = () => {
+  const [searchParams] = useSearchParams();
+  const { addToast } = useToast();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const token = searchParams.get('token') || '';
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (password.length < 6 || password.length > 128) {
+      addToast('Password must be between 6 and 128 characters.', 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      addToast('Passwords do not match.', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await authService.resetPassword(token, password);
+      setComplete(true);
+      addToast('Password reset successful.', 'success');
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Invalid or expired password reset token.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Helmet><title>Reset Password - Gene&apos;s InDrive</title></Helmet>
+      <div className="min-h-screen bg-gradient-to-br from-surface-950 via-surface-900 to-surface-950 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <Card className="border-surface-700/50 bg-surface-900/80 backdrop-blur-xl">
+            <CardContent className="py-8">
+              <h1 className="text-2xl font-bold text-white mb-2">Reset Password</h1>
+              {complete ? (
+                <div className="text-center py-4">
+                  <p className="text-accent-400 font-medium mb-4">Your password has been reset.</p>
+                  <Button variant="outline" fullWidth to="/login">Back to Sign In</Button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <Input label="New Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+                  <Input label="Confirm Password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+                  <Button type="submit" fullWidth size="lg" isLoading={submitting} disabled={!token}>Reset Password</Button>
+                  {!token && <p className="text-sm text-red-400">This reset link is invalid or expired.</p>}
                 </form>
               )}
             </CardContent>

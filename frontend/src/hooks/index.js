@@ -119,7 +119,6 @@ export const useMediaQuery = (query) => {
 export const useAuth = () => {
   return useAuthStore((state) => ({
     user: state.user,
-    token: state.token,
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
     login: state.login,

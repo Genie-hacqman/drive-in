@@ -1,12 +1,8 @@
 # Environment variables
 .env
 .env.*
-!.env.example
-!.env.sample
 **/.env
 **/.env.*
-!**/.env.example
-!**/.env.sample
 
 # Secrets and certificates
 *.pem
