@@ -77,29 +77,17 @@ export const throttle = (func, delay = 300) => {
   };
 };
 
-
-
-
 export const deepClone = (obj) => {
   return JSON.parse(JSON.stringify(obj));
 };
-
-
-
 
 export const mergeObjects = (target, source) => {
   return { ...target, ...source };
 };
 
-
-
-
 export const getNestedProperty = (obj, path) => {
   return path.split('.').reduce((acc, part) => acc?.[part], obj);
 };
-
-
-
 
 export const calculateDiscount = (originalPrice, discountPercent) => {
   const discount = originalPrice * (discountPercent / 100);
@@ -110,18 +98,12 @@ export const calculateDiscount = (originalPrice, discountPercent) => {
   };
 };
 
-
-
-
 export const getDaysBetween = (startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const diffTime = Math.abs(end - start);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
-
-
-
 
 export const formatPhone = (phone) => {
   const digits = phone.replace(/\D/g, '');
@@ -131,9 +113,6 @@ export const formatPhone = (phone) => {
   return phone;
 };
 
-
-
-
 export const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -142,15 +121,9 @@ export const generateUUID = () => {
   });
 };
 
-
-
-
 export const getQueryParams = (search) => {
   return new URLSearchParams(search);
 };
-
-
-
 
 export const buildQueryString = (params) => {
   const searchParams = new URLSearchParams();
@@ -162,9 +135,6 @@ export const buildQueryString = (params) => {
   return searchParams.toString();
 };
 
-
-
-
 export const safeJsonParse = (json, fallback = null) => {
   try {
     return JSON.parse(json);
@@ -173,20 +143,11 @@ export const safeJsonParse = (json, fallback = null) => {
   }
 };
 
-
-
-
 export const isEmpty = (obj) => {
   return Object.keys(obj).length === 0;
 };
 
-
-
-
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-
-
 
 export const retry = async (fn, maxRetries = 3, delayMs = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
