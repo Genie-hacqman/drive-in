@@ -52,9 +52,6 @@ export const isValidUrl = (url) => {
   }
 };
 
-
-
-
 export const debounce = (func, delay = 300) => {
   let timeoutId;
   return (...args) => {
@@ -62,9 +59,6 @@ export const debounce = (func, delay = 300) => {
     timeoutId = setTimeout(() => func(...args), delay);
   };
 };
-
-
-
 
 export const throttle = (func, delay = 300) => {
   let lastCall = 0;
