@@ -14,7 +14,6 @@ const EmptyState = ({
           <Icon size={64} />
         </div>
       )}
-
       <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-2">
         {title}
       </h3>
