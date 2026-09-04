@@ -12,11 +12,11 @@ export const authService = {
   register: (userData) =>
     apiClient.post('/auth/register', userData),
 
-  googleLogin: (googleProfile) =>
-    apiClient.post('/auth/google', googleProfile),
+  startOAuth: (provider, params = {}) =>
+    apiClient.get(`/auth/${provider}/start`, { params }),
 
-  adminGoogleLogin: (googleProfile) =>
-    apiClient.post('/auth/admin/google', googleProfile),
+  exchangeOAuthCode: (code) =>
+    apiClient.post('/auth/oauth/exchange', { code }),
 
   
   verifyEmail: (token) =>
@@ -53,6 +53,9 @@ export const authService = {
   
   logout: () =>
     apiClient.post('/auth/logout'),
+
+  logoutAll: () =>
+    apiClient.post('/auth/logout-all'),
 
   
   getCurrentUser: () =>

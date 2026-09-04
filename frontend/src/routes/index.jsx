@@ -12,6 +12,7 @@ const Cart = lazy(() => import('../pages/public/Cart'));
 
 const Login = lazy(() => import('../pages/auth/Login'));
 const AdminLogin = lazy(() => import('../pages/auth/AdminLogin'));
+const OAuthCallback = lazy(() => import('../pages/auth/OAuthCallback'));
 const Register = lazy(() => import('../pages/auth/Register'));
 
 
@@ -23,6 +24,7 @@ import {
   About,
   Contact,
   ForgotPassword,
+  ResetPassword,
 } from '../pages/public/Pages';
 
 import {
@@ -69,8 +71,10 @@ const Routes = () => {
         {}
         <Route path="/login" element={<Login />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/auth/callback" element={<OAuthCallback />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {}
         <Route path="/vehicles" element={<VehicleInventory />} />

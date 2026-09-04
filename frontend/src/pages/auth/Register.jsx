@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FiUser, FiMail, FiLock, FiPhone } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { SiApple } from 'react-icons/si';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import Button from '../../components/ui/Button';
 import Card, { CardContent, CardHeader } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../context/ToastContext';
-import { signInWithGoogle } from '../../services/googleAuth';
+import { authService } from '../../services/authService';
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -28,7 +29,6 @@ const Register = () => {
   const location = useLocation();
   const {
     register: registerUser,
-    googleLogin,
     isLoading
   } = useAuthStore();
   const {
@@ -51,14 +51,12 @@ const Register = () => {
   const password = watch('password');
   const redirectTo = location.state?.from || '/dashboard';
 
-  const handleGoogleSignUp = async () => {
+  const startOAuth = async (provider) => {
     try {
-      const googleProfile = await signInWithGoogle();
-      await googleLogin(googleProfile);
-      addToast('Google sign-in successful', 'success');
-      navigate(redirectTo, { replace: true });
+      const { data } = await authService.startOAuth(provider, { returnTo: redirectTo });
+      window.location.assign(data.authorizationUrl);
     } catch (error) {
-      addToast(error.message || 'Unable to continue with Google right now.', 'error');
+      addToast(error.response?.data?.message || error.message || `Unable to continue with ${provider}.`, 'error');
     }
   };
 
@@ -157,9 +155,14 @@ const Register = () => {
                   Create Account
                 </Button>
 
-                <Button type="button" variant="outline" fullWidth size="lg" onClick={handleGoogleSignUp}>
+                <Button type="button" variant="outline" fullWidth size="lg" onClick={() => startOAuth('google')}>
                   <FcGoogle className="h-5 w-5 shrink-0" />
                   Continue with Google
+                </Button>
+
+                <Button type="button" variant="outline" fullWidth size="lg" onClick={() => startOAuth('apple')}>
+                  <SiApple className="h-5 w-5 shrink-0" />
+                  Continue with Apple
                 </Button>
 
                 <p className="text-center text-slate-600 dark:text-slate-400 text-sm">

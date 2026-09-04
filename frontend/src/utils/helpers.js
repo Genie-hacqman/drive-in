@@ -1,6 +1,3 @@
-
-
-
 export const formatCurrency = (amount, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -8,9 +5,6 @@ export const formatCurrency = (amount, currency = 'USD') => {
     minimumFractionDigits: 0,
   }).format(amount);
 };
-
-
-
 
 export const formatDate = (date, format = 'short') => {
   const options = {
@@ -31,38 +25,23 @@ export const formatDate = (date, format = 'short') => {
   );
 };
 
-
-
-
 export const truncate = (str, length = 100) => {
   return str.length > length ? str.substring(0, length) + '...' : str;
 };
 
-
-
-
 export const capitalize = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
-
-
-
 
 export const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
-
-
-
 export const isValidPhone = (phone) => {
   const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
-
-
-
 
 export const isValidUrl = (url) => {
   try {
@@ -73,9 +52,6 @@ export const isValidUrl = (url) => {
   }
 };
 
-
-
-
 export const debounce = (func, delay = 300) => {
   let timeoutId;
   return (...args) => {
@@ -83,9 +59,6 @@ export const debounce = (func, delay = 300) => {
     timeoutId = setTimeout(() => func(...args), delay);
   };
 };
-
-
-
 
 export const throttle = (func, delay = 300) => {
   let lastCall = 0;
@@ -98,29 +71,17 @@ export const throttle = (func, delay = 300) => {
   };
 };
 
-
-
-
 export const deepClone = (obj) => {
   return JSON.parse(JSON.stringify(obj));
 };
-
-
-
 
 export const mergeObjects = (target, source) => {
   return { ...target, ...source };
 };
 
-
-
-
 export const getNestedProperty = (obj, path) => {
   return path.split('.').reduce((acc, part) => acc?.[part], obj);
 };
-
-
-
 
 export const calculateDiscount = (originalPrice, discountPercent) => {
   const discount = originalPrice * (discountPercent / 100);
@@ -131,18 +92,12 @@ export const calculateDiscount = (originalPrice, discountPercent) => {
   };
 };
 
-
-
-
 export const getDaysBetween = (startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const diffTime = Math.abs(end - start);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
-
-
-
 
 export const formatPhone = (phone) => {
   const digits = phone.replace(/\D/g, '');
@@ -152,9 +107,6 @@ export const formatPhone = (phone) => {
   return phone;
 };
 
-
-
-
 export const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -163,15 +115,9 @@ export const generateUUID = () => {
   });
 };
 
-
-
-
 export const getQueryParams = (search) => {
   return new URLSearchParams(search);
 };
-
-
-
 
 export const buildQueryString = (params) => {
   const searchParams = new URLSearchParams();
@@ -183,9 +129,6 @@ export const buildQueryString = (params) => {
   return searchParams.toString();
 };
 
-
-
-
 export const safeJsonParse = (json, fallback = null) => {
   try {
     return JSON.parse(json);
@@ -194,20 +137,11 @@ export const safeJsonParse = (json, fallback = null) => {
   }
 };
 
-
-
-
 export const isEmpty = (obj) => {
   return Object.keys(obj).length === 0;
 };
 
-
-
-
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-
-
 
 export const retry = async (fn, maxRetries = 3, delayMs = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

@@ -18,6 +18,7 @@ const normalizeUserRole = (role) => {
   if (!VALID_USER_ROLES.includes(value)) {
     throw new Error('Invalid user role');
   }
+
   return value;
 };
 
@@ -106,6 +107,9 @@ const liftUser = (row) => {
     role: row.role,
     authProvider: row.auth_provider,
     providerId: row.provider_id,
+    emailVerified: Boolean(row.email_verified),
+    status: row.status || 'active',
+    lastLoginAt: row.last_login_at,
     createdAt: row.created_at,
   };
 };
@@ -121,16 +125,85 @@ export async function initDatabase() {
       role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'dealer', 'admin')),
       auth_provider TEXT NOT NULL DEFAULT 'local' CHECK (auth_provider IN ('local', 'google')),
       provider_id TEXT DEFAULT NULL,
+      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+      last_login_at TIMESTAMPTZ DEFAULT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'local';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id TEXT DEFAULT NULL;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ DEFAULT NULL;
 
     UPDATE users
     SET auth_provider = 'local'
     WHERE auth_provider IS NULL;
+
+    CREATE TABLE IF NOT EXISTS oauth_accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL CHECK (provider IN ('google', 'apple')),
+      provider_user_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (provider, provider_user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS oauth_transactions (
+      state TEXT PRIMARY KEY,
+      provider TEXT NOT NULL CHECK (provider IN ('google', 'apple')),
+      return_to TEXT NOT NULL,
+      admin BOOLEAN NOT NULL DEFAULT FALSE,
+      nonce TEXT NOT NULL,
+      code_verifier TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS oauth_sessions (
+      code TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      return_to TEXT NOT NULL,
+      admin BOOLEAN NOT NULL DEFAULT FALSE,
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      revoked_at TIMESTAMPTZ DEFAULT NULL,
+      user_agent TEXT DEFAULT '',
+      ip_address TEXT DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ DEFAULT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id TEXT PRIMARY KEY,
+      event TEXT NOT NULL,
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      provider TEXT DEFAULT NULL,
+      ip_address TEXT DEFAULT '',
+      user_agent TEXT DEFAULT '',
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    INSERT INTO oauth_accounts (id, user_id, provider, provider_user_id)
+    SELECT 'oauth-' || md5(u.id || ':' || u.auth_provider || ':' || u.provider_id), u.id, u.auth_provider, u.provider_id
+    FROM users u
+    WHERE u.auth_provider = 'google' AND u.provider_id IS NOT NULL
+    ON CONFLICT (provider, provider_user_id) DO NOTHING;
 
     CREATE TABLE IF NOT EXISTS vehicles (
       id INTEGER PRIMARY KEY,
@@ -473,7 +546,7 @@ export async function ensureDemoUser() {
 
 export async function resetDatabaseForTests() {
   await initDatabase();
-  await pool.query('DELETE FROM bookings; DELETE FROM users; DELETE FROM vehicles;');
+  await pool.query('DELETE FROM bookings; DELETE FROM audit_events; DELETE FROM password_reset_tokens; DELETE FROM auth_sessions; DELETE FROM oauth_sessions; DELETE FROM oauth_transactions; DELETE FROM oauth_accounts; DELETE FROM users; DELETE FROM vehicles;');
   await seedVehicles();
   await ensureDemoUser();
 }
@@ -489,8 +562,187 @@ export async function getUserById(id) {
 }
 
 export async function getUserByGoogleId(googleId) {
-  const result = await pool.query('SELECT * FROM users WHERE auth_provider = $1 AND provider_id = $2', ['google', String(googleId)]);
+  return getUserByOAuthAccount('google', googleId);
+}
+
+export async function getUserByOAuthAccount(provider, providerUserId) {
+  const result = await pool.query(
+    `SELECT u.*
+     FROM users u
+     INNER JOIN oauth_accounts oa ON oa.user_id = u.id
+     WHERE oa.provider = $1 AND oa.provider_user_id = $2`,
+    [String(provider), String(providerUserId)],
+  );
   return liftUser(result.rows[0]);
+}
+
+export async function createAuthSession({ tokenHash, userId, expiresAt, userAgent = '', ipAddress = '' }) {
+  await pool.query(
+    `INSERT INTO auth_sessions (token_hash, user_id, expires_at, user_agent, ip_address)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [String(tokenHash), String(userId), expiresAt, String(userAgent || '').slice(0, 500), String(ipAddress || '').slice(0, 100)],
+  );
+}
+
+export async function getAuthSession(tokenHash) {
+  const result = await pool.query(
+    `SELECT s.token_hash, s.user_id, s.expires_at, s.revoked_at, u.*
+     FROM auth_sessions s
+     INNER JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > NOW()`,
+    [String(tokenHash)],
+  );
+  if (!result.rows[0]) return null;
+  return {
+    tokenHash: result.rows[0].token_hash,
+    userId: result.rows[0].user_id,
+    expiresAt: result.rows[0].expires_at,
+    user: liftUser(result.rows[0]),
+  };
+}
+
+export async function revokeAuthSession(tokenHash) {
+  await pool.query('UPDATE auth_sessions SET revoked_at = NOW() WHERE token_hash = $1 AND revoked_at IS NULL', [String(tokenHash)]);
+}
+
+export async function revokeAllAuthSessions(userId) {
+  await pool.query('UPDATE auth_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [String(userId)]);
+}
+
+export async function createPasswordResetToken({ tokenHash, userId, expiresAt }) {
+  await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND (used_at IS NOT NULL OR expires_at <= NOW())', [String(userId)]);
+  await pool.query(
+    `INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+     VALUES ($1, $2, $3)`,
+    [String(tokenHash), String(userId), expiresAt],
+  );
+}
+
+export async function resetPasswordWithToken(tokenHash, newPassword) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(
+      `SELECT user_id FROM password_reset_tokens
+       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+       FOR UPDATE`,
+      [String(tokenHash)],
+    );
+    const token = result.rows[0];
+    if (!token) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const passwordHash = bcrypt.hashSync(String(newPassword), 10);
+    await client.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, token.user_id]);
+    await client.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1', [String(tokenHash)]);
+    await client.query('UPDATE auth_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [token.user_id]);
+    await client.query('COMMIT');
+    return getUserById(token.user_id);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function logAuditEvent({ event, userId = null, provider = null, ipAddress = '', userAgent = '', metadata = {} }) {
+  await pool.query(
+    `INSERT INTO audit_events (id, event, user_id, provider, ip_address, user_agent, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [
+      `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      String(event),
+      userId ? String(userId) : null,
+      provider ? String(provider) : null,
+      String(ipAddress || '').slice(0, 100),
+      String(userAgent || '').slice(0, 500),
+      serializeJson(metadata),
+    ],
+  );
+}
+
+export async function updateUserLastLogin(userId) {
+  await pool.query('UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1', [String(userId)]);
+  return getUserById(userId);
+}
+
+export async function markUserEmailVerified(userId) {
+  await pool.query('UPDATE users SET email_verified = TRUE, updated_at = NOW() WHERE id = $1', [String(userId)]);
+}
+
+export async function createOAuthTransaction(transaction) {
+  await pool.query('DELETE FROM oauth_transactions WHERE expires_at <= NOW()');
+  await pool.query(
+    `INSERT INTO oauth_transactions (state, provider, return_to, admin, nonce, code_verifier, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NOW() + ($7 * INTERVAL '1 millisecond'))`,
+    [transaction.state, transaction.provider, transaction.returnTo, Boolean(transaction.admin), transaction.nonce, transaction.codeVerifier, Number(transaction.ttl)],
+  );
+}
+
+export async function consumeOAuthTransaction(state, provider) {
+  const result = await pool.query(
+    `DELETE FROM oauth_transactions
+     WHERE state = $1 AND provider = $2 AND expires_at > NOW()
+     RETURNING state, provider, return_to, admin, nonce, code_verifier`,
+    [String(state || ''), String(provider)],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    provider: row.provider,
+    returnTo: row.return_to,
+    admin: row.admin,
+    nonce: row.nonce,
+    codeVerifier: row.code_verifier,
+  };
+}
+
+export async function createOAuthSession(session) {
+  await pool.query('DELETE FROM oauth_sessions WHERE expires_at <= NOW()');
+  await pool.query(
+    `INSERT INTO oauth_sessions (code, user_id, return_to, admin, expires_at)
+     VALUES ($1, $2, $3, $4, NOW() + ($5 * INTERVAL '1 millisecond'))`,
+    [session.code, String(session.userId), session.returnTo, Boolean(session.admin), Number(session.ttl)],
+  );
+}
+
+export async function consumeOAuthSession(code) {
+  const result = await pool.query(
+    `DELETE FROM oauth_sessions
+     WHERE code = $1 AND expires_at > NOW()
+     RETURNING user_id, return_to, admin`,
+    [String(code || '')],
+  );
+  const row = result.rows[0];
+  return row ? { userId: row.user_id, returnTo: row.return_to, admin: row.admin } : null;
+}
+
+export async function linkOAuthAccount({ userId, provider, providerUserId }) {
+  const id = `oauth-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await pool.query(
+    `INSERT INTO oauth_accounts (id, user_id, provider, provider_user_id, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, NOW(), NOW())
+     ON CONFLICT (provider, provider_user_id) DO UPDATE SET updated_at = NOW()`,
+    [id, String(userId), String(provider), String(providerUserId)],
+  );
+}
+
+export async function createOAuthUser({ name, email, emailVerified, provider, providerUserId }) {
+  const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const passwordHash = bcrypt.hashSync(`oauth-${provider}-${providerUserId}-${Math.random()}`, 10);
+  const normalizedEmail = String(email || `${provider}-${providerUserId}@users.invalid`).trim().toLowerCase();
+
+  await pool.query(
+    `INSERT INTO users (id, name, email, password_hash, phone, role, auth_provider, provider_id, email_verified, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, '', 'customer', 'local', NULL, $5, NOW(), NOW())`,
+    [id, String(name || `${provider} user`), normalizedEmail, passwordHash, Boolean(emailVerified)],
+  );
+
+  await linkOAuthAccount({ userId: id, provider, providerUserId });
+  return getUserById(id);
 }
 
 export async function createUser({ name, email, password, phone = '', role = 'customer', authProvider = 'local', providerId = null }) {

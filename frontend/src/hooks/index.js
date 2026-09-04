@@ -119,7 +119,6 @@ export const useMediaQuery = (query) => {
 export const useAuth = () => {
   return useAuthStore((state) => ({
     user: state.user,
-    token: state.token,
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
     login: state.login,
@@ -174,8 +173,6 @@ export const useFormValidation = (initialValues, onSubmit, validate) => {
     setValues,
   };
 };
-
-
 
 
 export const usePagination = (items, itemsPerPage = 10) => {

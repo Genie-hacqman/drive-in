@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FiMail, FiLock, FiShield } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { SiApple } from 'react-icons/si';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import Button from '../../components/ui/Button';
 import Card, { CardContent, CardHeader } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../context/ToastContext';
-import { signInWithGoogle } from '../../services/googleAuth';
+import { authService } from '../../services/authService';
 
 const adminLoginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,7 +21,7 @@ const adminLoginSchema = z.object({
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { adminLogin, adminGoogleLogin, isLoading } = useAuthStore();
+  const { adminLogin, isLoading } = useAuthStore();
   const { addToast } = useToast();
   const [googleError, setGoogleError] = useState('');
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -36,14 +37,13 @@ const AdminLogin = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const startOAuth = async (provider) => {
     setGoogleError('');
     try {
-      const googleProfile = await signInWithGoogle();
-      await adminGoogleLogin(googleProfile);
-      navigate('/admin/dashboard', { replace: true });
+      const { data } = await authService.startOAuth(provider, { returnTo: '/admin/dashboard', admin: 'true' });
+      window.location.assign(data.authorizationUrl);
     } catch (error) {
-      setGoogleError(error.message || 'This Google account is not authorized for admin access.');
+      setGoogleError(error.response?.data?.message || error.message || `Unable to sign in with ${provider}.`);
     }
   };
 
@@ -73,9 +73,13 @@ const AdminLogin = () => {
                 <Input label="Email Address" type="email" placeholder="admin@yourcompany.com" icon={FiMail} {...register('email')} error={errors.email?.message} required />
                 <Input label="Password" type="password" placeholder="••••••••" icon={FiLock} {...register('password')} error={errors.password?.message} required />
                 <Button type="submit" fullWidth size="lg" isLoading={isLoading}>Sign In</Button>
-                <Button type="button" variant="outline" fullWidth size="lg" onClick={handleGoogleSignIn} disabled={isLoading}>
+                <Button type="button" variant="outline" fullWidth size="lg" onClick={() => startOAuth('google')} disabled={isLoading}>
                   <FcGoogle className="h-5 w-5 shrink-0" />
                   Continue with Google
+                </Button>
+                <Button type="button" variant="outline" fullWidth size="lg" onClick={() => startOAuth('apple')} disabled={isLoading}>
+                  <SiApple className="h-5 w-5 shrink-0" />
+                  Continue with Apple
                 </Button>
                 {googleError && <p className="text-sm text-red-500" role="alert">{googleError}</p>}
               </form>
