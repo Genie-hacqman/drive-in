@@ -1,6 +1,3 @@
-
-
-
 export const formatCurrency = (amount, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -41,16 +38,10 @@ export const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-
-
-
 export const isValidPhone = (phone) => {
   const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
-
-
-
 
 export const isValidUrl = (url) => {
   try {
