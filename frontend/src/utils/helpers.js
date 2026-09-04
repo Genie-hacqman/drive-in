@@ -9,9 +9,6 @@ export const formatCurrency = (amount, currency = 'USD') => {
   }).format(amount);
 };
 
-
-
-
 export const formatDate = (date, format = 'short') => {
   const options = {
     short: { month: 'short', day: 'numeric', year: 'numeric' },
@@ -30,9 +27,6 @@ export const formatDate = (date, format = 'short') => {
     new Date(date)
   );
 };
-
-
-
 
 export const truncate = (str, length = 100) => {
   return str.length > length ? str.substring(0, length) + '...' : str;
