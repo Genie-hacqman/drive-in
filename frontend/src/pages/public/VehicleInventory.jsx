@@ -49,7 +49,8 @@ const VehicleInventory = () => {
       }
     };
 
-    fetchVehicles();
+    const requestTimer = setTimeout(fetchVehicles, 250);
+    return () => clearTimeout(requestTimer);
   }, [filters]);
 
   const filteredVehicles = useMemo(() => {

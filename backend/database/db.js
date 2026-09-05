@@ -8,6 +8,9 @@ const { Pool } = pg;
 const defaultConnectionString = `postgresql://${process.env.USER || 'genehacqman'}@localhost:5432/${process.env.PGDATABASE || 'showroom'}`;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || defaultConnectionString,
+  max: Number(process.env.DB_POOL_MAX || 20),
+  idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS || 30000),
+  connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS || 5000),
 });
 
 const VALID_USER_ROLES = ['customer', 'dealer', 'admin'];
