@@ -11,6 +11,8 @@ import helmet from 'helmet';
 import { doubleCsrf } from 'csrf-csrf';
 import { Server } from 'socket.io';
 import axios from 'axios';
+import { createClient } from 'redis';
+import { RedisStore } from 'rate-limit-redis';
 import { OAuth2Client } from 'google-auth-library';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import {
@@ -46,6 +48,7 @@ import {
   updateVehicle,
   deleteVehicle,
 } from '../database/db.js';
+import pool from '../database/db.js';
 import { sendPasswordResetEmail } from '../services/email.js';
 
 dotenv.config();
@@ -55,6 +58,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const TRUST_PROXY_HOPS = Number(process.env.TRUST_PROXY_HOPS || 0);
+const REDIS_URL = process.env.REDIS_URL;
+const redisClient = REDIS_URL ? createClient({ url: REDIS_URL }) : null;
+const rateLimitStore = redisClient
+  ? new RedisStore({ sendCommand: (...args) => redisClient.sendCommand(args) })
+  : undefined;
+
+if (IS_PRODUCTION && !REDIS_URL) {
+  throw new Error('REDIS_URL is required in production for shared rate limiting');
+}
 
 const app = express();
 app.set('trust proxy', TRUST_PROXY_HOPS > 0 ? TRUST_PROXY_HOPS : false);
@@ -99,6 +111,20 @@ app.use(cors({ origin: FRONTEND_URL, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false }));
+
+const metrics = {
+  startedAt: Date.now(),
+  requests: 0,
+  errors: 0,
+};
+
+app.use((req, res, next) => {
+  metrics.requests += 1;
+  res.on('finish', () => {
+    if (res.statusCode >= 500) metrics.errors += 1;
+  });
+  next();
+});
 
 const hashSessionToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const sessionCookieOptions = { httpOnly: true, secure: IS_PRODUCTION, sameSite: 'lax', path: '/', maxAge: SESSION_MAX_AGE };
@@ -165,6 +191,7 @@ const authRateLimiter = rateLimit({
   limit: 100,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  store: rateLimitStore,
   message: { message: 'Too many authentication requests. Please try again later.' },
 });
 
@@ -173,6 +200,7 @@ const loginRateLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  store: rateLimitStore,
   message: { message: 'Too many login attempts. Please try again later.' },
 });
 
@@ -181,6 +209,7 @@ const passwordResetLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  store: rateLimitStore,
   message: { message: 'Too many password reset requests. Please try again later.' },
 });
 
@@ -299,6 +328,33 @@ const resolveOAuthUser = async ({ provider, providerUserId, name, email, emailVe
 
 app.get('/api/health', (_, res) => {
   res.json({ ok: true, service: 'drive-me-api' });
+});
+
+app.get('/api/health/ready', async (_, res) => {
+  try {
+    await pool.query('SELECT 1');
+    if (redisClient?.isOpen !== true) {
+      return res.status(503).json({ ok: false, database: true, redis: false });
+    }
+    return res.json({ ok: true, database: true, redis: true });
+  } catch (error) {
+    console.error('Readiness check failed:', error.message);
+    return res.status(503).json({ ok: false, database: false, redis: redisClient?.isOpen === true });
+  }
+});
+
+app.get('/api/metrics', (_, res) => {
+  res.type('text/plain').send([
+    '# HELP drive_me_uptime_seconds Process uptime in seconds',
+    '# TYPE drive_me_uptime_seconds gauge',
+    `drive_me_uptime_seconds ${process.uptime()}`,
+    '# HELP drive_me_requests_total Total HTTP requests handled by this instance',
+    '# TYPE drive_me_requests_total counter',
+    `drive_me_requests_total ${metrics.requests}`,
+    '# HELP drive_me_errors_total Total HTTP 5xx responses from this instance',
+    '# TYPE drive_me_errors_total counter',
+    `drive_me_errors_total ${metrics.errors}`,
+  ].join('\n') + '\n');
 });
 
 app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
@@ -780,6 +836,11 @@ app.use((error, req, res, next) => {
   return res.status(error.status || 500).json({ message: 'Internal server error' });
 });
 
+if (redisClient) {
+  redisClient.on('error', (error) => console.error('Redis client error:', error.message));
+  await redisClient.connect();
+}
+
 await initDatabase();
 await seedVehicles();
 await ensureDemoUser();
@@ -790,4 +851,15 @@ if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`Drive-me API listening on http://localhost:${PORT}`);
   });
+
+  const shutdown = async (signal) => {
+    console.log(`${signal} received, shutting down`);
+    await new Promise((resolve) => server.close(resolve));
+    await pool.end();
+    if (redisClient?.isOpen) await redisClient.quit();
+    process.exit(0);
+  };
+
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
 }

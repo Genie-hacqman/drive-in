@@ -24,6 +24,8 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.0.0",
     "pg": "^8.23.0",
+    "rate-limit-redis": "^6.0.1",
+    "redis": "^6.2.1",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
